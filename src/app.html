@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%sveltekit.head%
+		<script>
+			// Dynamically import all CSS files in the 'sx-static' directory
+			const cssFiles = import.meta.glob('/sx-static/*.css');
+			for (const path in cssFiles) {
+				cssFiles[path]().then(module => {
+					// Append the CSS to the document's head
+					const styleElem = document.createElement('style');
+					styleElem.textContent = module.default;
+					document.head.appendChild(styleElem);
+				});
+			}
+		</script>
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div>%sveltekit.body%</div>
+	</body>
+</html>
