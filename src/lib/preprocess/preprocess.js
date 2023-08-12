@@ -88,10 +88,50 @@ export default function sxPreprocessor(dir = '../../sxc/') {
                             const styles = allSxClasses[actualClassName](
                                 ...params.map((param, index) => `var(--${actualClassName}-param${index + 1})`)
                             );
-
                             for (const [key, value] of Object.entries(styles)) {
                                 const styleString = checkSpecial(key, value);
+                                if(key.startsWith("_")){
+                                    let tagStyle= ""
+                                    for (const [tagKey, tagValue] of Object.entries(value)) {
+                                        let tagHoverContent = ""
+                                        if (!breakpoints[tagKey]) {
+                                            const isHoverClass = (tagKey === "H_" || tagKey === "h_");
+                                            // Separate styles for hover classes
+                                            if (isHoverClass) {
+                                                let hoverStyle = "";
+                                                for (const [hoverKey, hoverValue] of Object.entries(tagValue)) {
+                                                    hoverStyle += `${checkSpecial(hoverKey, hoverValue)}\n`;
+                                                }
+                                                tagHoverContent += hoverStyle;
+                                                // Combine individual and hover styles
+                                                if (tagHoverContent) {
+                                                    tagStyle += `&:hover {\n${tagHoverContent}\n}`;
+                                                }
+                                            } else {
+                                                tagStyle += `${checkSpecial(tagKey, tagValue)}\n`;
+                                            }
+                                        } else {
+                                            let mediaStyles = '';
+                                            let hoverMediaStyles = '';
+                                            for (const [mediaKey, mediaValue] of Object.entries(tagValue)) {
+                                                if (mediaKey === "H_" || mediaKey === "h_") {
+                                                    for (const [hoverKey, hoverValue] of Object.entries(mediaValue)) {
+                                                        hoverMediaStyles += `${checkSpecial(hoverKey, hoverValue)}\n`;
+                                                    }
+                                                } else {
+                                                    mediaStyles += `${checkSpecial(mediaKey, mediaValue)}\n`;
+                                                }
+                                            }
+                                            mediaStylesMap[tagKey] += `.${uniqueClassName} ${tagKey.substring(1)} {\n${mediaStyles}\n}`;
+                                            tagStyle += `@media ${breakpoints[tagKey]} {\n${mediaStyles}\n}`;
+                                            if (hoverMediaStyles) {
+                                                tagStyle += `@media ${breakpoints[tagKey]} {\n&:hover {\n${hoverMediaStyles}\n}\n}`;
+                                            }
 
+                                        }
+                                    }
+                                    allStyles += `\n.${uniqueClassName} ${key.substring(1)} {\n${tagStyle}\n}\n`;
+                                }
                                 if (!breakpoints[key]) {
                                     const isHoverClass = (key === "H_" || key === "h_");
                                     // Separate styles for hover classes
@@ -137,7 +177,48 @@ export default function sxPreprocessor(dir = '../../sxc/') {
                             // Handle static style objects
                             for (const [key, value] of Object.entries(allSxClasses[actualClassName])) {
                                 const styleString = checkSpecial(key, value);
+                                if(key.startsWith("_")){
+                                    let tagStyle= ""
+                                    for (const [tagKey, tagValue] of Object.entries(value)) {
+                                        let tagHoverContent = ""
+                                        if (!breakpoints[tagKey]) {
+                                            const isHoverClass = (tagKey === "H_" || tagKey === "h_");
+                                            // Separate styles for hover classes
+                                            if (isHoverClass) {
+                                                let hoverStyle = "";
+                                                for (const [hoverKey, hoverValue] of Object.entries(tagValue)) {
+                                                    hoverStyle += `${checkSpecial(hoverKey, hoverValue)}\n`;
+                                                }
+                                                tagHoverContent += hoverStyle;
+                                                // Combine individual and hover styles
+                                                if (tagHoverContent) {
+                                                    tagStyle += `&:hover {\n${tagHoverContent}\n}`;
+                                                }
+                                            } else {
+                                                tagStyle += `${checkSpecial(tagKey, tagValue)}\n`;
+                                            }
+                                        } else {
+                                            let mediaStyles = '';
+                                            let hoverMediaStyles = '';
+                                            for (const [mediaKey, mediaValue] of Object.entries(tagValue)) {
+                                                if (mediaKey === "H_" || mediaKey === "h_") {
+                                                    for (const [hoverKey, hoverValue] of Object.entries(mediaValue)) {
+                                                        hoverMediaStyles += `${checkSpecial(hoverKey, hoverValue)}\n`;
+                                                    }
+                                                } else {
+                                                    mediaStyles += `${checkSpecial(mediaKey, mediaValue)}\n`;
+                                                }
+                                            }
+                                            mediaStylesMap[tagKey] += `.${uniqueClassName} ${tagKey.substring(1)} {\n${mediaStyles}\n}`;
+                                            tagStyle += `@media ${breakpoints[tagKey]} {\n${mediaStyles}\n}`;
+                                            if (hoverMediaStyles) {
+                                                tagStyle += `@media ${breakpoints[tagKey]} {\n&:hover {\n${hoverMediaStyles}\n}\n}`;
+                                            }
 
+                                        }
+                                    }
+                                    allStyles += `\n.${uniqueClassName} ${key.substring(1)} {\n${tagStyle}\n}\n`;
+                                }
                                 if (!breakpoints[key]) {
                                     const isHoverClass = (key === "H_" || key === "h_");
                                     // Separate styles for hover classes
@@ -206,6 +287,8 @@ export default function sxPreprocessor(dir = '../../sxc/') {
         },
     };
 }
+
+
 
 
 function checkSpecial(key, value) {

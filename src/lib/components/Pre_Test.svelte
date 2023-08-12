@@ -15,7 +15,8 @@
 <div sxClass="buttonVariant:color:width">
     {color}
     Hello World
+    <button  on:click={changeColor}>Change Color</button>
+
 </div>
 
-<button sxClass="button" on:click={changeColor}>Change Color</button>
 <button on:click={()=>width = parseInt(width.split("%")[0])+10+"%"}>Change Color</button>

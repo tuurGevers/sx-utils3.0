@@ -12,7 +12,25 @@ export const buttonVariant = (color = 'blue', width = "100px") => ({
     lg: {
         width: '50%'
     },
-    h_:{
-        bgc:"blue"
+    h_: {
+        bgc: "blue"
+    },
+    _button: {
+        bgc: "black",
+        h_: {
+            bgc: "red"
+        },
+        sm: {
+            width: 40,
+            h_: {
+                bgc: "orange"
+            },
+        },
+        md: {
+            width: '70%'
+        },
+        lg: {
+            width: '50%'
+        },
     }
 });
