@@ -1,6 +1,6 @@
 {
-	"name": "sx-utils3.0",
-	"version": "0.0.1",
+	"name": "sx-static",
+	"version": "0.1.1",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build && npm run package",
@@ -11,9 +11,12 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
 			"svelte": "./dist/index.js"
-		}
+		},
+		"./dist/*": "./dist/*"
 	},
+
 	"files": [
 		"dist",
 		"!dist/**/*.test.*",

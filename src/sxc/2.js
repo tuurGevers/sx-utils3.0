@@ -1,15 +1,18 @@
 export const buttonVariant = (color = 'blue', width = "100px") => ({
-    backgroundColor: color,
+    bgc: color,
     width: width,
-    height: '50px',
+    height: 30,
     borderRadius: '5px',
     sm: {
-        width: '100%'
+        width: 40
     },
     md: {
         width: '70%'
     },
     lg: {
         width: '50%'
+    },
+    h_:{
+        bgc:"blue"
     }
 });

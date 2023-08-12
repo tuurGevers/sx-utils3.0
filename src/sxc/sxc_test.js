@@ -10,19 +10,28 @@ export const example2 = {
 // sxc_test.js
 
 
-export const h_button = {
-    color: "green"
-}
+
 
 export const button = {
     color: "blue",
+    h_:{
+        color: "orange"
+    },
     sm: {
-        width: '100%'
+        width: '100%',
+
     },
     md: {
-        width: '70%'
+        width: '70%',
+        h_:{
+            color: "red"
+        }
     },
     lg: {
-        width: '50%'
-    }
+        width: '50%',
+        h_:{
+            color: "black"
+        }
+    },
+
 }
