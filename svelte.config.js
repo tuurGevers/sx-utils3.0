@@ -1,5 +1,4 @@
 import adapter from '@sveltejs/adapter-auto';
-import path from "path";
 import sxPreprocessor from "./src/lib/preprocess/preprocess.js";
 
 /** @type {import('@sveltejs/kit').Config} */

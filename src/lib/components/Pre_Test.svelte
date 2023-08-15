@@ -19,4 +19,4 @@
 
 </div>
 
-<button on:click={()=>width = parseInt(width.split("%")[0])+10+"%"}>Change Color</button>
+<button sxClass="example1" on:click={()=>width = parseInt(width.split("%")[0])+10+"%"}>Change Color</button>

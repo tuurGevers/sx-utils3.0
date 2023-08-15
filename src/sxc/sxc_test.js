@@ -1,6 +1,7 @@
 // sxc_test.js
 export const example1 = {
-    color:"Red"
+    color: "Red",
+    animation: "expand 1s ease-in-out",
 };
 
 export const example2 = {
@@ -10,11 +11,9 @@ export const example2 = {
 // sxc_test.js
 
 
-
-
 export const button = {
     color: "blue",
-    h_:{
+    h_: {
         color: "orange"
     },
     sm: {
@@ -23,15 +22,26 @@ export const button = {
     },
     md: {
         width: '70%',
-        h_:{
+        h_: {
             color: "red"
         }
     },
     lg: {
         width: '50%',
-        h_:{
+        h_: {
             color: "black"
         }
     },
 
+}
+export const kf_expand = {
+    "0%": {
+        transform: "scale(0.5)",
+    },
+    "50%": {
+        transform: "scale(1.5)",
+    },
+    "100%": {
+        transform: "scale(1)",
+    }
 }

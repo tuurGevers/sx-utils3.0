@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
 
@@ -14,32 +14,40 @@ export default function sxPreprocessor(dir = '../../sxc/') {
     // Object to store all the imported sx classes
     const allSxClasses = {};
     let count = 0
+    let animations = {}
     // Dynamically import all the files
     files.forEach(file => {
         if (file.endsWith('.js')) {
             const modulePath = pathToFileURL(path.join(sxcDir, file));
             import(modulePath).then(module => {
                 // Add the unique class name as a prop to each component
-                Object.values(module).forEach(component => {
-                    component.props = {
-                        ...component.props,
-                        uniqueClassName: `sxClassGenerated${count}`,
-                    };
-                });
+                for (const key in module) {
+                    console.log(key)
+                    if (key.startsWith('kf_')) {
+                        const value = module[key];
+                        const name = key.substring(3);
+                        let lines = ""
+                        for (const [kfKey, kfValue] of Object.entries(value)) {
+                            lines += ` ${kfKey} ${JSON.stringify(kfValue).replaceAll("'", "").replaceAll('"', "")} `
+                        }
+                        animations[name] = `@keyframes ${name} 
+                           { ${lines}\n}
+                        `
+                    }
+                }
 
                 // Merge the imported sx classes into allSxClasses object
                 Object.assign(allSxClasses, module);
             });
         }
     });
+    const seoTagsPath = path.join(process.cwd(), 'src/seoTags.json');
+
+    const exists = fs.pathExistsSync(seoTagsPath);
 
     return {
         markup({content, filename}) {
-            if (!filename.includes("Pre_")) {
-                return
-            } else {
-                console.log(filename)
-            }
+
             let modifiedContent = content;
             let allStyles = '';
             let reactiveStatements = '';
@@ -48,21 +56,38 @@ export default function sxPreprocessor(dir = '../../sxc/') {
             // Breakpoints for media queries
             const breakpoints = {
                 sm: 'only screen and (max-width: 640px)',
-                md: 'only screen and (max-width: 768px) and (min-width: 641px)',
-                lg: 'only screen and (min-width: 769px)',
+                md: 'only screen and (max-width: 1200px) and (min-width: 641px)',
+                lg: 'only screen and (min-width: 1201px)',
             };
 
             // Map to store media query styles for each breakpoint
             const mediaStylesMap = {
-                sm: '',
-                md: '',
-                lg: '',
+                sm: '', md: '', lg: '',
             };
 
             // Regular expression to match sxClass attribute in the content
             const regex = /sxClass="([^"]+)"/g;
             let matches;
             let count = 0;
+            let keyframes = ""
+            if (!filename.includes("Pre_")) {
+                return
+            } else {
+                if (exists) {
+                    const seoTags = fs.readJsonSync(seoTagsPath);
+
+                    // Extract the parent directory and filename from the full path
+                    const parentDir = path.basename(path.dirname(filename));
+                    const baseName = path.basename(filename, '.svelte');
+                    const key = `${parentDir}/${baseName}`;
+
+                    const seoTag = seoTags[key];
+
+                    if (seoTag) {
+                        modifiedContent = modifiedContent.replace('</script>', `</script>\n${seoTag}`);
+                    }
+                }
+            }
 
             // Loop through all instances of sxClass in the content
             while ((matches = regex.exec(content)) !== null) {
@@ -85,13 +110,16 @@ export default function sxPreprocessor(dir = '../../sxc/') {
                     if (allSxClasses[actualClassName]) {
                         if (typeof allSxClasses[actualClassName] === 'function') {
                             // Call the dynamic function to get the styles
-                            const styles = allSxClasses[actualClassName](
-                                ...params.map((param, index) => `var(--${actualClassName}-param${index + 1})`)
-                            );
+                            const styles = allSxClasses[actualClassName](...params.map((param, index) => `var(--${actualClassName}-param${index + 1})`));
                             for (const [key, value] of Object.entries(styles)) {
                                 const styleString = checkSpecial(key, value);
-                                if(key.startsWith("_")){
-                                    let tagStyle= ""
+                                if (key === "animation") {
+                                    let anim = animations[value.split(' ')[0]]
+                                    keyframes += anim
+                                }
+
+                                if (key.startsWith("_")) {
+                                    let tagStyle = ""
                                     for (const [tagKey, tagValue] of Object.entries(value)) {
                                         let tagHoverContent = ""
                                         if (!breakpoints[tagKey]) {
@@ -100,6 +128,7 @@ export default function sxPreprocessor(dir = '../../sxc/') {
                                             if (isHoverClass) {
                                                 let hoverStyle = "";
                                                 for (const [hoverKey, hoverValue] of Object.entries(tagValue)) {
+
                                                     hoverStyle += `${checkSpecial(hoverKey, hoverValue)}\n`;
                                                 }
                                                 tagHoverContent += hoverStyle;
@@ -177,8 +206,12 @@ export default function sxPreprocessor(dir = '../../sxc/') {
                             // Handle static style objects
                             for (const [key, value] of Object.entries(allSxClasses[actualClassName])) {
                                 const styleString = checkSpecial(key, value);
-                                if(key.startsWith("_")){
-                                    let tagStyle= ""
+                                if (key === "animation") {
+                                    let anim = animations[value.split(' ')[0]]
+                                    keyframes += anim
+                                }
+                                if (key.startsWith("_")) {
+                                    let tagStyle = ""
                                     for (const [tagKey, tagValue] of Object.entries(value)) {
                                         let tagHoverContent = ""
                                         if (!breakpoints[tagKey]) {
@@ -219,6 +252,7 @@ export default function sxPreprocessor(dir = '../../sxc/') {
                                     }
                                     allStyles += `\n.${uniqueClassName} ${key.substring(1)} {\n${tagStyle}\n}\n`;
                                 }
+
                                 if (!breakpoints[key]) {
                                     const isHoverClass = (key === "H_" || key === "h_");
                                     // Separate styles for hover classes
@@ -273,8 +307,8 @@ export default function sxPreprocessor(dir = '../../sxc/') {
 
             // Add all styles in a single <style> tag at the end of modified content
             if (allStyles) {
-                modifiedContent += `<style>${allStyles}</style>`;
-                console.log(modifiedContent)
+                modifiedContent += `<style>${allStyles}\n\n${keyframes}</style>`;
+                console.log(keyframes)
             }
 
             // Append reactive statements inside the <script> tag
@@ -287,8 +321,6 @@ export default function sxPreprocessor(dir = '../../sxc/') {
         },
     };
 }
-
-
 
 
 function checkSpecial(key, value) {
@@ -415,6 +447,16 @@ function checkSpecial(key, value) {
             translate = "background-color: " + convertNumbers(value) + ";";
             break;
         }
+        case "border": {
+            valid = true
+            translate = "border: " + value + ";";
+            break
+        }
+        case "animation": {
+            valid = true
+            translate = "animation: " + value + ";";
+            break
+        }
         default:
             if (containsUppercase(key)) {
                 valid = true;
@@ -434,7 +476,7 @@ function convertNumbers(value) {
         const numbers = value.split(" ");
         if (numbers.length > 1) {
             const validNumbers = numbers.filter(num => !isNaN(Number(num)) && !/[^0-9]/.test(num));
-            if (validNumbers.length > 0 && validNumbers.length <= 4) {
+            if (validNumbers.length > 1 && validNumbers.length <= 4) {
                 return numbers.map(num => {
                     if (!isNaN(Number(num)) && !/[^0-9]/.test(num)) {
                         return Number(num) * 8 + "px";
@@ -442,6 +484,8 @@ function convertNumbers(value) {
                         return num;
                     }
                 }).join(" ");
+            }else{
+                return value;
             }
         } else {
             return value;
@@ -454,3 +498,4 @@ function convertNumbers(value) {
 function containsUppercase(str) {
     return /[A-Z]/.test(str);
 }
+
