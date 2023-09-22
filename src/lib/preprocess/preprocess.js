@@ -7,42 +7,23 @@ export default function sxPreprocessor(dir = '../../sxc/') {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const sxcDir = path.join(__dirname, dir);
+    const libDir = path.join(__dirname,"sxc_lib/")
+
+    const sxcFiles = fs.readdirSync(sxcDir);
+    const libFiles = fs.readdirSync(libDir);
 
     // Read all files in the sxc directory
-    const files = fs.readdirSync(sxcDir);
+    const allFiles = [
+        ...sxcFiles.map(file => ({dir: sxcDir, file})),
+        ...libFiles.map(file => ({dir: libDir, file}))
+    ];
 
     // Object to store all the imported sx classes
-    const allSxClasses = {};
+    let allSxClasses = {};
     let count = 0
     let animations = {}
     // Dynamically import all the files
-    files.forEach(file => {
-        if (file.endsWith('.js')) {
-            const modulePath = pathToFileURL(path.join(sxcDir, file));
-            import(modulePath).then(module => {
-                // Add the unique class name as a prop to each component
-                for (const key in module) {
-                    if (key.startsWith('kf_')) {
-                        const value = module[key];
-                        console.log(value)
-                        const name = key.substring(3);
-                        let lines = ""
-                        for (const [kfKey, kfValue] of Object.entries(value)) {
-                            let properties = Object.entries(kfValue).map(([prop, val]) => `${prop}:${JSON.stringify(val).replaceAll("'", "").replaceAll('"', "")}`).join("; ");
-                            lines += `${kfKey} { ${properties} } `;
-                        }
-                        animations[name] = `@keyframes ${name} 
-                                                { ${lines}\n}
-                                                `
-                    }
-                }
 
-
-                // Merge the imported sx classes into allSxClasses object
-                Object.assign(allSxClasses, module);
-            });
-        }
-    });
     const seoTagsPath = path.join(process.cwd(), 'src/seoTags.json');
 
     const exists = fs.pathExistsSync(seoTagsPath);
@@ -59,6 +40,43 @@ export default function sxPreprocessor(dir = '../../sxc/') {
             let reactiveStatements = '';
             let uniqueClassName = '';
             let specialStyles = '';
+            let filesToInclude = filterFilesToInclude(content);
+            filesToInclude.length===0?filesToInclude=allFiles.map(af=>af.file):filesToInclude
+            allFiles.forEach(({dir, file}) => {
+                if (file.endsWith('.js') && filesToInclude.includes(file)) {  // You can adjust the file filtering logic as needed
+                    const modulePath = pathToFileURL(path.join(dir, file));
+                    import(modulePath).then(module => {
+                        // Add the unique class name as a prop to each component
+                        for (const key in module) {
+                            if (key.startsWith('kf_')) {
+                                const value = module[key];
+                                const name = key.substring(3);
+                                let lines = ""
+                                for (const [kfKey, kfValue] of Object.entries(value)) {
+                                    let properties = Object.entries(kfValue).map(([prop, val]) => `${prop}:${JSON.stringify(val).replaceAll("'", "").replaceAll('"', "")}`).join("; ");
+                                    lines += `${kfKey} { ${properties} } `;
+                                }
+                                animations[name] = `@keyframes ${name} 
+                                                { ${lines}\n}
+                                                `
+                            }
+                        }
+
+                        // Merge the imported sx classes into allSxClasses object
+                        allSxClasses[file] = module
+                        console.log(file)
+                        console.log(allSxClasses[file])
+                        console.log("\n\n\n\n\n")
+
+                    });
+                }
+            });
+
+            const includedSxClasses = filesToInclude.map((file)=>{
+                return allSxClasses[file]
+            })
+            const flattenedSxClasses = Object.assign({}, ...includedSxClasses);
+
 
             // Breakpoints for media queries
             const breakpoints = {
@@ -103,10 +121,10 @@ export default function sxPreprocessor(dir = '../../sxc/') {
                         inlineStyles += `--${actualClassName}-param${pIndex + 1}: ${param};`;
                     });
 
-                    if (allSxClasses[actualClassName]) {
-                        if (typeof allSxClasses[actualClassName] === 'function') {
+                    if (flattenedSxClasses[actualClassName]) {
+                        if (typeof flattenedSxClasses[actualClassName] === 'function') {
                             // Call the dynamic function to get the styles
-                            const styles = allSxClasses[actualClassName](...params.map((param, index) => `var(--${actualClassName}-param${index + 1})`));
+                            const styles = flattenedSxClasses[actualClassName](...params.map((param, index) => `var(--${actualClassName}-param${index + 1})`));
                             processStyles(styles)
 
                             // Generate reactive statements for inline styles
@@ -114,7 +132,7 @@ export default function sxPreprocessor(dir = '../../sxc/') {
                                 reactiveStatements += `--${actualClassName}-param${index + 1}: {${param}};`;
                             });
                         } else {
-                            processStyles(allSxClasses[actualClassName])
+                            processStyles(flattenedSxClasses[actualClassName])
                         }
 
                         styleContent += individualStyleContent;
@@ -228,17 +246,15 @@ export default function sxPreprocessor(dir = '../../sxc/') {
 
                 allStyles += `.${uniqueClassName} {\n${styleContent}\n}`;
                 // Replace the original sxClass attribute with the generated class name
-                modifiedContent = modifiedContent.replace(matches[0],` class="${uniqueClassName}"`);
+                modifiedContent = modifiedContent.replace(matches[0], ` class="${uniqueClassName}"`);
                 count++;
 
             }
 
             // Add all styles in a single <style> tag at the end of modified content
             if (allStyles) {
-                console.log(keyframes)
                 if (modifiedContent.includes("<style")) {
-                    modifiedContent= modifiedContent.replace("</style>", `\n\n${allStyles}\n\n</style>`)
-                    console.log(modifiedContent)
+                    modifiedContent = modifiedContent.replace("</style>", `\n\n${allStyles}\n\n</style>`)
                 } else {
                     modifiedContent += `<style>${allStyles}\n\n${keyframes}</style>`;
                 }
@@ -246,9 +262,17 @@ export default function sxPreprocessor(dir = '../../sxc/') {
 
             // Append reactive statements inside the <script> tag
             if (reactiveStatements) {
-                if(modifiedContent.includes("style=")){
-                    modifiedContent = modifiedContent.replace("style=", `style="${reactiveStatements}`);
-                }else{
+                if (modifiedContent.includes("style=")) {
+                    if (modifiedContent.includes("style={")) {
+                        const styleRegex = /style=\{([^}]+)\}/g;
+                        modifiedContent = content.replace(styleRegex, (match, styleContent) => {
+                            return `style={'${reactiveStatements}'+${styleContent}}`;
+                        });
+                    } else {
+                        const styleContentHere = modifiedContent.split('style="')[1].split('"')[0];
+                        modifiedContent = modifiedContent.replace(`style="`, `style="${reactiveStatements} ${styleContentHere}`);
+                    }
+                } else {
                     modifiedContent = modifiedContent.replace('class=', `style="${reactiveStatements}" class=`);
                 }
             }
@@ -451,3 +475,10 @@ function containsUppercase(str) {
     return /[A-Z]/.test(str);
 }
 
+function filterFilesToInclude(content) {
+    const stylesCommentMatch = content.match(/<!--\s*styles:\s*([^>]+(?!->))\s*-->/);
+    if (stylesCommentMatch) {
+        return stylesCommentMatch[1].split(',').map(file => file.trim());
+    }
+    return [];  // if no files are specified, return an empty array or default to include all files.
+}
