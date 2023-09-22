@@ -1,8 +1,10 @@
 <script>
-    import Test from "$lib/components/Pre_Test.svelte";
-    import FlexBox from "$lib/components/FlexBox.svelte";
-    import Hover from "$lib/components/Hover.svelte";
+    import Pre_Div from "$lib/components/Pre_Div.svelte";
+    import Pre_Test from "../lib/components/Pre_Test.svelte";
+    import Pre_Flexbox from "../lib/components/Pre_Flexbox.svelte";
 </script>
 
 
-<Test/>
+<Pre_Flexbox />
+<Pre_Flexbox direction="column"/>
+<Pre_Flexbox direction="row" justify="center" gap="40px"/>

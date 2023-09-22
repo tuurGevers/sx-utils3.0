@@ -1,8 +1,8 @@
 {
 	"name": "sx-static",
-	"version": "0.2.3",
+	"version": "0.3.1",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "vite dev --host",
 		"build": "vite build && npm run package",
 		"preview": "vite preview",
 		"package": "svelte-kit sync && svelte-package && publint",
@@ -17,15 +17,13 @@
 		"./dist/*": "./dist/*"
 	},
 	"files": [
-		"dist",
+		"dist/**/*",
 		"!dist/**/*.test.*",
 		"!dist/**/*.spec.*"
 	],
-	"bin": {
-		"svelte-seo": "./lib/Seo.cjs"
-	},
 	"peerDependencies": {
-		"svelte": "^4.0.0"
+		"svelte": "^4.0.0",
+		"@sveltejs/kit": "^1.20.4"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",
@@ -42,8 +40,8 @@
 	"type": "module",
 	"dependencies": {
 		"axios": "^1.4.0",
-		"commander": "^11.0.0",
 		"fs-extra": "^11.1.1",
+		"node-html-parser": "^6.1.6",
 		"svelte-preprocess": "^5.0.4"
 	}
 }

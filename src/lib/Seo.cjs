@@ -123,7 +123,6 @@ async function gptRequest(content, key) {
                 {
                     role: "assistant",
                     content: "<svelte:head>\n" +
-                        "    <title>Revenue Visualization Chart</title>\n" +
                         "    <meta name=\"description\" content=\"A dynamic chart visualizing revenue data based on alerts. The chart plots revenue against time, providing insights into financial performance.\">\n" +
                         "    <meta name=\"keywords\" content=\"revenue, chart, visualization, chart.js, financial data, alerts, time series\">\n" +
                         "</svelte:head>"

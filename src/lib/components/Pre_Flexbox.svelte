@@ -1,14 +1,23 @@
 <script>
-    import { onMount } from "svelte";
-    import {browser} from "$app/environment";
     export let direction = "row"
     export let align = "center"
     export let justify="space-around"
     export let wrap = false
-    export let gap="4px"
+    export let gap="0px"
 </script>
 
-
 <div sxClass="flexbox:direction:align:justify:wrap:gap">
-    <slot/>
+    <div>
+        test
+    </div>
+     <div>
+        test
+    </div>
+     <div>
+        test
+    </div>
+     <div>
+        test
+    </div>
+
 </div>
