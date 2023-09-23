@@ -64,9 +64,7 @@ export default function sxPreprocessor(dir = '../../sxc/') {
 
                         // Merge the imported sx classes into allSxClasses object
                         allSxClasses[file] = module
-                        console.log(file)
-                        console.log(allSxClasses[file])
-                        console.log("\n\n\n\n\n")
+
 
                     });
                 }
@@ -118,8 +116,11 @@ export default function sxPreprocessor(dir = '../../sxc/') {
 
                     // Generate inline styles for the variables
                     params.forEach((param, pIndex) => {
-                        inlineStyles += `--${actualClassName}-param${pIndex + 1}: ${param};`;
+                        param.startsWith("$")?
+                            inlineStyles += `--${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`:
+                            inlineStyles += `--${actualClassName}-param${pIndex + 1}: ${param};`;
                     });
+                    console.log(inlineStyles)
 
                     if (flattenedSxClasses[actualClassName]) {
                         if (typeof flattenedSxClasses[actualClassName] === 'function') {
@@ -129,7 +130,9 @@ export default function sxPreprocessor(dir = '../../sxc/') {
 
                             // Generate reactive statements for inline styles
                             params.forEach((param, index) => {
-                                reactiveStatements += `--${actualClassName}-param${index + 1}: {${param}};`;
+                                param.startsWith("$")?
+                                    reactiveStatements += `--${actualClassName}-param${index + 1}: {${param.replace("$", "")}};`:
+                                    reactiveStatements += `--${actualClassName}-param${index + 1}: ${param};`;
                             });
                         } else {
                             processStyles(flattenedSxClasses[actualClassName])
