@@ -1,5 +1,8 @@
 import adapter from '@sveltejs/adapter-auto';
-import sxPreprocessor from "./src/lib/preprocess/preprocess.js";
+import {
+    sxPreprocessor,
+    sxExtraPreprocessor
+} from "./src/lib/preprocess/preprocess.js";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -10,7 +13,10 @@ const config = {
         adapter: adapter(),
     },
 
-    preprocess: [sxPreprocessor()],
+    preprocess: [
+        sxExtraPreprocessor(),
+        sxPreprocessor()
+    ],
 
 };
 
