@@ -116,29 +116,34 @@ export default function sxPreprocessor(dir = '../../sxc/') {
 
                     // Generate inline styles for the variables
                     params.forEach((param, pIndex) => {
-                        param.startsWith("$")?
-                            inlineStyles += `--${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`:
+                        if (param.startsWith("$")) {
+                            // If the parameter is "extra", handle it separately
+                            if (param.startsWith("$$")) {
+                                processStyles(flattenedSxClasses[param.replaceAll("$","")])
+                            } else {
+                                inlineStyles += `--${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`;
+                                reactiveStatements += `--${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`;
+                            }
+                        } else {
                             inlineStyles += `--${actualClassName}-param${pIndex + 1}: ${param};`;
+                        }
                     });
-                    console.log(inlineStyles)
+                    console.log("style2:"+individualStyleContent)
 
                     if (flattenedSxClasses[actualClassName]) {
                         if (typeof flattenedSxClasses[actualClassName] === 'function') {
-                            // Call the dynamic function to get the styles
-                            const styles = flattenedSxClasses[actualClassName](...params.map((param, index) => `var(--${actualClassName}-param${index + 1})`));
-                            processStyles(styles)
-
-                            // Generate reactive statements for inline styles
-                            params.forEach((param, index) => {
-                                param.startsWith("$")?
-                                    reactiveStatements += `--${actualClassName}-param${index + 1}: {${param.replace("$", "")}};`:
-                                    reactiveStatements += `--${actualClassName}-param${index + 1}: ${param};`;
-                            });
+                            const styles = flattenedSxClasses[actualClassName](...params.map((param, index) => {
+                                if(param.startsWith("$$")) return
+                                console.log(param)
+                                return `var(--${actualClassName}-param${index + 1})`
+                            }));
+                            processStyles(styles);
                         } else {
-                            processStyles(flattenedSxClasses[actualClassName])
+                            processStyles(flattenedSxClasses[actualClassName]);
                         }
 
                         styleContent += individualStyleContent;
+                        console.log("style3:"+individualStyleContent)
                     }
 
 
