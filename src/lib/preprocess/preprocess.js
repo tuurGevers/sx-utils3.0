@@ -4,7 +4,24 @@ import {fileURLToPath, pathToFileURL} from 'url';
 import {parse, walk} from 'svelte/compiler';
 
 let componentsMap = new Map();
+function getDefaultParams(func) {
+    // Convert the function to its string representation
+    const funcStr = func.toString();
 
+    // Extract everything between the first pair of parentheses
+    const paramsStr = funcStr.match(/\(([^)]+)\)/)[1];
+
+    // Split the parameters by comma and map over each param
+    return paramsStr.split(',').map(param => {
+        // Check if the param has a default value
+        const parts = param.trim().split('=');
+        if (parts.length > 1) {
+            return parts[1].trim();  // Return the default value
+        } else {
+            return undefined;  // Return undefined for no default
+        }
+    });
+}
 export function preprocessSxExtra({content, filename}) {
     const regex = /<Pre_(.*?)\s.*?sxExtra\s?=\s?["'](.*?)["'].*?id\s?=\s?["'](.*?)["']/g;
     let matches;
@@ -21,7 +38,7 @@ export function preprocessSxExtra({content, filename}) {
         idMap.set(idValue, sxExtraValue);
     }
     // Insert the generated object into content after building the map
-    content = insertGeneratedObjectIntoContent(content);
+
 
     // Replace the $$ placeholders
     content = replaceSxPlaceholders({content, filename});
@@ -61,9 +78,12 @@ export function sxPreprocessor(dir = '../../sxc/') {
 
     // Read all files in the sxc directory
     const allFiles = [
-        ...sxcFiles.map(file => ({dir: sxcDir, file})),
-        ...libFiles.map(file => ({dir: libDir, file}))
+        ...sxcFiles.map(file => ({ dir: sxcDir, file })),
+        ...libFiles
+            .filter(file => !file.endsWith(".ts")) // Exclude .ts files
+            .map(file => ({ dir: libDir, file }))
     ];
+
 
     // Object to store all the imported sx classes
     let allSxClasses = {};
@@ -184,9 +204,18 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     let hoverStyleContent = '';
                     const [name, ...params] = item.split(':');
                     const actualClassName = name;
-
+                    const defaultValues = getDefaultParams(flattenedSxClasses[actualClassName])
+                    console.log(defaultValues)
                     // Generate inline styles for the variables
                     params.forEach((param, pIndex) => {
+                        let newParam = param
+                        console.log(param)
+                        if (param.length ===0) {
+                            console.log("empty")
+                            newParam=defaultValues[pIndex]
+                            param = newParam.replaceAll("'", "").replaceAll('"', "")
+                            console.log(param)
+                        }
                         if (param.startsWith("$")) {
                             // If the parameter is "extra", handle it separately
                             if (param.startsWith("$id")) {
@@ -197,7 +226,10 @@ export function sxPreprocessor(dir = '../../sxc/') {
                                 reactiveStatements += `--${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`;
                             }
                         } else {
+                            console.log(`--${actualClassName}-param${pIndex + 1}: ${param};`)
                             inlineStyles += `--${actualClassName}-param${pIndex + 1}: ${param};`;
+                            reactiveStatements += `--${actualClassName}-param${pIndex + 1}: ${param};`;
+
                         }
                     });
 
@@ -357,7 +389,6 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     modifiedContent = modifiedContent.replace('class=', `style="${reactiveStatements}" class=`);
                 }
             }
-            console.log(modifiedContent)
             // Return the modified content
             return {code: modifiedContent};
 

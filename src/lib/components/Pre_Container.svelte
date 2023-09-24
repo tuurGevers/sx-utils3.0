@@ -3,11 +3,11 @@
     export let padding = "0 15px";
     export let margin = "0 auto";
     export let bgColor = "transparent";
-    export let extraStyle = {};
+    export let sxExtra = "FlexBoxStyle"
+    export let id
+
 </script>
 
-<div sxClass="container:$maxWidth:$padding:$margin:$bgColor:$$extraStyle">
+<div sxClass={"container:$maxWidth:$padding:$margin:$bgColor:$$id"} id={id}>
     <slot></slot>
 </div>
-
-<!--styles:__Container.js-->

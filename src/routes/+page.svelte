@@ -1,24 +1,15 @@
 <script>
+
+ import Pre_Test from "../lib/components/Pre_Test.svelte";
+
  let direction = "row"
 import Pre_FlexBox from "../lib/components/Pre_FlexBox.svelte";
+import Pre_Container from "../lib/components/Pre_Container.svelte";
 </script>
 
-
-
-<Pre_FlexBox direction={direction} sxExtra="FlexBoxStyle" id="FlexBoxStyle">
+<Pre_Test>
     <h1>test</h1>
     <h1>test</h1>
     <h1>test</h1>
     <h1>test</h1>
-</Pre_FlexBox>
-
-<Pre_FlexBox direction={direction} sxExtra="red" id="red">
-    <h1>test</h1>
-    <h1>test</h1>
-    <h1>test</h1>
-    <h1>test</h1>
-</Pre_FlexBox>
-
-
-<button on:click={()=>direction==="row"?direction="column":direction="row"}></button>
-
+</Pre_Test>
