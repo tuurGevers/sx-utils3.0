@@ -2,7 +2,7 @@ import adapter from '@sveltejs/adapter-auto';
 import {
     sxPreprocessor,
     sxExtraPreprocessor
-} from "./src/lib/preprocess/preprocess.js";
+} from "./src/lib/index.js";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {

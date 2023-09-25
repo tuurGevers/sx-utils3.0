@@ -89,7 +89,7 @@ async function gptRequest(content, key) {
                         "    import chartjs from 'chart.js';\n" +
                         "    let chartData;\n" +
                         "    import { onMount } from 'svelte';\n" +
-                        "    import {alerts, formatTime} from \"./index.js\";\n" +
+                        "    import {alerts, formatTime} from \"./index.cjs\";\n" +
                         "\n" +
                         "    let chartValues\n" +
                         "    let chartLabels\n" +

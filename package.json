@@ -1,6 +1,6 @@
 {
 	"name": "sx-static",
-	"version": "0.4.7",
+	"version": "0.5.0",
 	"scripts": {
 		"dev": "vite dev --host",
 		"build": "vite build && npm run package",
@@ -22,13 +22,14 @@
 		"!dist/**/*.spec.*"
 	],
 	"peerDependencies": {
-		"svelte": "^4.0.0",
-		"@sveltejs/kit": "^1.20.4"
+		"@sveltejs/kit": "^1.20.4",
+		"svelte": "^4.0.0"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/kit": "^1.20.4",
 		"@sveltejs/package": "^2.0.0",
+		"eslint": "^8.50.0",
 		"publint": "^0.1.9",
 		"svelte": "^4.0.5",
 		"tslib": "^2.4.1",
@@ -40,6 +41,7 @@
 	"type": "module",
 	"dependencies": {
 		"axios": "^1.4.0",
+		"esprima": "^4.0.1",
 		"fs-extra": "^11.1.1",
 		"node-html-parser": "^6.1.6",
 		"svelte-preprocess": "^5.0.4"

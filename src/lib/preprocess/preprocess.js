@@ -185,8 +185,6 @@ export function sxPreprocessor(dir = '../../sxc/') {
                             } else {
                             }
                         });
-                    } else {
-                        console.log("Component not found in componentsMap");
                     }
                 } catch (e) {
                     console.error("Error:", e);
@@ -204,41 +202,38 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     let hoverStyleContent = '';
                     const [name, ...params] = item.split(':');
                     const actualClassName = name;
-                    const defaultValues = getDefaultParams(flattenedSxClasses[actualClassName])
-                    console.log(defaultValues)
+                    let defaultValues
+                    if(typeof flattenedSxClasses[actualClassName] === 'function')
+                         defaultValues = getDefaultParams(flattenedSxClasses[actualClassName])
                     // Generate inline styles for the variables
                     params.forEach((param, pIndex) => {
                         let newParam = param
-                        console.log(param)
                         if (param.length ===0) {
-                            console.log("empty")
                             newParam=defaultValues[pIndex]
                             param = newParam.replaceAll("'", "").replaceAll('"', "")
-                            console.log(param)
                         }
                         if (param.startsWith("$")) {
                             // If the parameter is "extra", handle it separately
                             if (param.startsWith("$id")) {
-                                console.log("id found")
                                 extraClass = "{id}"
                             } else {
-                                inlineStyles += `--${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`;
-                                reactiveStatements += `--${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`;
+                                inlineStyles += `--${uniqueClassName}-${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`;
+                                reactiveStatements += `--${uniqueClassName}-${actualClassName}-param${pIndex + 1}: {${param.replace("$", "")}};`;
                             }
                         } else {
-                            console.log(`--${actualClassName}-param${pIndex + 1}: ${param};`)
-                            inlineStyles += `--${actualClassName}-param${pIndex + 1}: ${param};`;
-                            reactiveStatements += `--${actualClassName}-param${pIndex + 1}: ${param};`;
+                            inlineStyles += `--${uniqueClassName}-${actualClassName}-param${pIndex + 1}: ${param};`;
+                            reactiveStatements += `--${uniqueClassName}-${actualClassName}-param${pIndex + 1}: ${param};`;
 
                         }
                     });
+
 
 
                     if (flattenedSxClasses[actualClassName]) {
                         if (typeof flattenedSxClasses[actualClassName] === 'function') {
                             const styles = flattenedSxClasses[actualClassName](...params.map((param, index) => {
                                 if (param.startsWith("$$")) return
-                                return `var(--${actualClassName}-param${index + 1})`
+                                return `var(--${uniqueClassName}-${actualClassName}-param${index + 1})`
                             }));
                             processStyles(styles);
                         } else {
@@ -389,6 +384,7 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     modifiedContent = modifiedContent.replace('class=', `style="${reactiveStatements}" class=`);
                 }
             }
+            console.log(modifiedContent)
             // Return the modified content
             return {code: modifiedContent};
 
