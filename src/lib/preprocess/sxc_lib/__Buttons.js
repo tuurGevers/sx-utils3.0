@@ -39,7 +39,7 @@ export let buttonStyle = ({
 });
 
 // Utility to convert HEX color to RGB
-function hexToRgb(hex) {
+export function hexToRgb(hex) {
     hex = hex.replace(/^#/, '');
     let bigint = parseInt(hex, 16);
     let r = (bigint >> 16) & 255;

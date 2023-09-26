@@ -4,6 +4,7 @@ import {fileURLToPath, pathToFileURL} from 'url';
 import {parse, walk} from 'svelte/compiler';
 
 let componentsMap = new Map();
+
 function getDefaultParams(func) {
     // Convert the function to its string representation
     const funcStr = func.toString();
@@ -22,6 +23,7 @@ function getDefaultParams(func) {
         }
     });
 }
+
 export function preprocessSxExtra({content, filename}) {
     const regex = /<Pre_(.*?)\s.*?sxExtra\s?=\s?["'](.*?)["'].*?id\s?=\s?["'](.*?)["']/g;
     let matches;
@@ -78,10 +80,10 @@ export function sxPreprocessor(dir = '../../sxc/') {
 
     // Read all files in the sxc directory
     const allFiles = [
-        ...sxcFiles.map(file => ({ dir: sxcDir, file })),
+        ...sxcFiles.map(file => ({dir: sxcDir, file})),
         ...libFiles
             .filter(file => !file.endsWith(".ts")) // Exclude .ts files
-            .map(file => ({ dir: libDir, file }))
+            .map(file => ({dir: libDir, file}))
     ];
 
 
@@ -203,13 +205,13 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     const [name, ...params] = item.split(':');
                     const actualClassName = name;
                     let defaultValues
-                    if(typeof flattenedSxClasses[actualClassName] === 'function')
-                         defaultValues = getDefaultParams(flattenedSxClasses[actualClassName])
+                    if (typeof flattenedSxClasses[actualClassName] === 'function')
+                        defaultValues = getDefaultParams(flattenedSxClasses[actualClassName])
                     // Generate inline styles for the variables
                     params.forEach((param, pIndex) => {
                         let newParam = param
-                        if (param.length ===0) {
-                            newParam=defaultValues[pIndex]
+                        if (param.length === 0) {
+                            newParam = defaultValues[pIndex]
                             param = newParam.replaceAll("'", "").replaceAll('"', "")
                         }
                         if (param.startsWith("$")) {
@@ -228,7 +230,6 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     });
 
 
-
                     if (flattenedSxClasses[actualClassName]) {
                         if (typeof flattenedSxClasses[actualClassName] === 'function') {
                             const styles = flattenedSxClasses[actualClassName](...params.map((param, index) => {
@@ -245,113 +246,22 @@ export function sxPreprocessor(dir = '../../sxc/') {
 
 
                     function processStyles(styles) {
-                        for (const [key, value] of Object.entries(styles)) {
-                            const styleString = checkSpecial(key, value);
-                            if (key === "animation") {
-                                let anim = animations[value.split(' ')[0]]
-                                keyframes += anim
-                            }
-
-                            if (key.startsWith("_")) {
-                                let tagStyle = ""
-                                for (const [tagKey, tagValue] of Object.entries(value)) {
-                                    if (tagKey === "animation") {
-                                        let anim = animations[tagValue.split(' ')[0]]
-                                        keyframes += anim
-                                    }
-                                    let tagHoverContent = ""
-                                    if (!breakpoints[tagKey]) {
-                                        const isHoverClass = (tagKey === "H_" || tagKey === "h_");
-                                        // Separate styles for hover classes
-                                        if (isHoverClass) {
-                                            let hoverStyle = "";
-                                            for (const [hoverKey, hoverValue] of Object.entries(tagValue)) {
-
-                                                hoverStyle += `${checkSpecial(hoverKey, hoverValue)}\n`;
-                                            }
-                                            tagHoverContent += hoverStyle;
-                                            // Combine individual and hover styles
-                                            if (tagHoverContent) {
-                                                tagStyle += `&:hover {\n${tagHoverContent}\n}`;
-                                            }
-                                        } else {
-                                            tagStyle += `${checkSpecial(tagKey, tagValue)}\n`;
-                                        }
-                                    } else {
-                                        let mediaStyles = '';
-                                        let hoverMediaStyles = '';
-                                        for (const [mediaKey, mediaValue] of Object.entries(tagValue)) {
-                                            if (mediaKey === "H_" || mediaKey === "h_") {
-                                                for (const [hoverKey, hoverValue] of Object.entries(mediaValue)) {
-                                                    hoverMediaStyles += `${checkSpecial(hoverKey, hoverValue)}\n`;
-                                                }
-                                            } else {
-                                                mediaStyles += `${checkSpecial(mediaKey, mediaValue)}\n`;
-                                            }
-                                        }
-
-                                        // Generate the media query outside of the class selector
-                                        if (mediaStyles) {
-                                            allStyles += `@media ${breakpoints[tagKey]} {\n.${uniqueClassName}.${uniqueClassName} ${key.substring(1)} {\n${mediaStyles}\n}\n}`;
-                                        }
-                                        if (hoverMediaStyles) {
-                                            allStyles += `@media ${breakpoints[tagKey]} {\n.${uniqueClassName}${uniqueClassName} ${key.substring(1)}:hover {\n${hoverMediaStyles}\n}\n}`;
-                                        }
-                                    }
-                                }
-                                if (key.startsWith("_:")) {
-                                    allStyles += `\n.${uniqueClassName}${key.substring(1)} {\n${tagStyle}\n}\n`;
-                                } else {
-                                    allStyles += `\n.${uniqueClassName} ${key.substring(1)} {\n${tagStyle}\n}\n`;
-
-                                }
-                            } else if (!breakpoints[key]) {
-                                const isHoverClass = (key === "H_" || key === "h_");
-                                // Separate styles for hover classes
-                                if (isHoverClass) {
-                                    let hoverStyle = "";
-                                    for (const [hoverKey, hoverValue] of Object.entries(value)) {
-                                        hoverStyle += `${checkSpecial(hoverKey, hoverValue)}\n`;
-                                    }
-                                    hoverStyleContent += hoverStyle;
-                                    // Combine individual and hover styles
-                                    if (hoverStyleContent) {
-                                        individualStyleContent += `&:hover {\n${hoverStyleContent}\n}`;
-                                    }
-                                } else {
-                                    individualStyleContent += styleString;
-                                }
-                            } else {
-                                let mediaStyles = '';
-                                let hoverMediaStyles = '';
-                                for (const [mediaKey, mediaValue] of Object.entries(value)) {
-                                    if (mediaKey === "H_" || mediaKey === "h_") {
-                                        for (const [hoverKey, hoverValue] of Object.entries(mediaValue)) {
-                                            hoverMediaStyles += `${checkSpecial(hoverKey, hoverValue)}\n`;
-                                        }
-                                    } else {
-                                        mediaStyles += `${checkSpecial(mediaKey, mediaValue)}\n`;
-                                    }
-                                }
-
-                                // Generate the media query outside of the class selector
-                                if (mediaStyles) {
-                                    allStyles += `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName} {\n${mediaStyles}\n}\n}`;
-                                }
-                                if (hoverMediaStyles) {
-                                    allStyles += `@media ${breakpoints[key]} {\n.${uniqueClassName}:hover.${uniqueClassName} {\n${hoverMediaStyles}\n}\n}`;
-                                }
-                            }
-
-
+                        const results = generateStyles(styles, uniqueClassName);
+                        if (results.styles) {
+                            allStyles += `.${uniqueClassName} {\n${results.styles}\n}`;
+                            allStyles += `\n${results.individualStyles}\n`;
                         }
+                        if (results.hoverContent) {
+                            allStyles += `${results.hoverContent}\n`;
+                        }
+                        keyframes += results.keyframesContent;
                     }
 
                 });
 
                 allStyles += `.${uniqueClassName} {\n${styleContent}\n}`;
-                if(extraClass){
-                    uniqueClassName += " "+ extraClass
+                if (extraClass) {
+                    uniqueClassName += " " + extraClass
                 }
                 // Replace the original sxClass attribute with the generated class name
                 modifiedContent = modifiedContent.replace(matches[0], ` class="${uniqueClassName}"`);
@@ -384,7 +294,7 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     modifiedContent = modifiedContent.replace('class=', `style="${reactiveStatements}" class=`);
                 }
             }
-            console.log(modifiedContent)
+
             // Return the modified content
             return {code: modifiedContent};
 
@@ -402,6 +312,51 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     modifiedContent = modifiedContent.replace('</script>', `</script>\n${seoTag}`);
                 }
             }
+
+            function generateStyles(obj, prefix = '') {
+                let styles = '';
+                let hoverContent = '';
+                let keyframesContent = '';
+                let individualStyles = '';
+
+                for (const [key, value] of Object.entries(obj)) {
+                    if (key.startsWith("_")) {
+                        if (key.startsWith("_:")) {
+                            let pseudoClassStyles = '';
+                            for (const [pseudoKey, pseudoValue] of Object.entries(value)) {
+                                pseudoClassStyles += checkSpecial(pseudoKey, pseudoValue);
+                            }
+                            const pseudoClass = key.split(':')[1];
+                            hoverContent += `.${uniqueClassName} ${prefix}:${pseudoClass} {\n${pseudoClassStyles}\n}\n`;
+
+                        } else {
+                            const nestedStyles = generateStyles(value, key.substring(1));
+                            individualStyles += `.${prefix} ${key.substring(1)} { ${nestedStyles.styles} }\n`;
+                            hoverContent += nestedStyles.hoverContent;
+                            keyframesContent += nestedStyles.keyframesContent;
+                        }
+                    } else if (key === "H_" || key === "h_") {
+                        let hoverStyles = '';
+                        for (const [hoverKey, hoverValue] of Object.entries(value)) {
+                            hoverStyles += checkSpecial(hoverKey, hoverValue);
+                        }
+                        hoverContent += `.${prefix}${key.substring(1).replaceAll("_", "")}:hover {\n${hoverStyles}\n}\n`;
+                    } else if (key === "animation") {
+                        let anim = animations[value.split(' ')[0]];
+                        keyframesContent += anim;
+                    } else {
+                        styles += `${checkSpecial(key, value)}\n`;
+                    }
+                }
+                return {
+                    styles: styles,
+                    individualStyles: individualStyles,
+                    hoverContent: hoverContent,
+                    keyframesContent: keyframesContent
+                };
+            }
+
+
         },
     }
 };
@@ -722,5 +677,9 @@ function processExtraStyles(styles, animations, breakpoints, uniqueClassName) {
         allStyles,
         name: uniqueClassName
     };
+
+
 }
+
+
 
