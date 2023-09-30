@@ -5,7 +5,7 @@
     let color = "blue"
 </script>
 
-<div sxClass={[container("red",color)]}>
+<div sxClass={[container("red",color,"relative"), animation2, animation("20%")]}>
     <h1>test</h1>
     <h1>test</h1>
     <h1>test</h1>

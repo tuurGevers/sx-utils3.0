@@ -138,10 +138,8 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     .map(sxClass => sxClass
                         .replaceAll('{', '')
                         .replaceAll("}", "")
-                        .replaceAll(",", ":")
-                        .split(":").map(param=>{
-                            console.log("param:"+param)
-                            if(param.includes('"') || param.includes("'")){
+                        .split(",").map(param=>{
+                            if(param.includes('"') || param.includes("'") || !sxClass.includes(",")){
                                 return param
                             }else{
                                 console.log("$"+ param)
