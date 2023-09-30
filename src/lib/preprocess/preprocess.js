@@ -1,72 +1,8 @@
 import fs from 'fs-extra';
 import path from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
-import {parse, walk} from 'svelte/compiler';
 
 let componentsMap = new Map();
-
-function getDefaultParams(func) {
-    // Convert the function to its string representation
-    const funcStr = func.toString();
-
-    // Extract everything between the first pair of parentheses
-    const paramsStr = funcStr.match(/\(([^)]+)\)/)[1];
-
-    // Split the parameters by comma and map over each param
-    return paramsStr.split(',').map(param => {
-        // Check if the param has a default value
-        const parts = param.trim().split('=');
-        if (parts.length > 1) {
-            return parts[1].trim();  // Return the default value
-        } else {
-            return undefined;  // Return undefined for no default
-        }
-    });
-}
-
-export function preprocessSxExtra({content, filename}) {
-    const regex = /<Pre_(.*?)\s.*?sxExtra\s?=\s?["'](.*?)["'].*?id\s?=\s?["'](.*?)["']/g;
-    let matches;
-
-    while ((matches = regex.exec(content)) !== null) {
-        const componentName = matches[1];
-        const sxExtraValue = matches[2];
-        const idValue = matches[3];
-
-        if (!componentsMap.has(componentName)) {
-            componentsMap.set(componentName, new Map());
-        }
-        let idMap = componentsMap.get(componentName);
-        idMap.set(idValue, sxExtraValue);
-    }
-    // Insert the generated object into content after building the map
-
-
-    // Replace the $$ placeholders
-    content = replaceSxPlaceholders({content, filename});
-
-    return {code: content};
-}
-
-export function replaceSxExtraPlaceholder({content, filename}) {
-    for (let [componentName, idMap] of componentsMap.entries()) {
-        for (let [id, sxExtraValue] of idMap.entries()) {
-            const placeholderRegex = new RegExp(`\\$\\$${sxExtraValue}`, 'g');
-            content = content.replace(placeholderRegex, id);
-        }
-    }
-
-    return {code: content};
-}
-
-export function sxExtraPreprocessor() {
-    return {
-        markup({content, filename}) {
-            const processedContent = preprocessSxExtra({content, filename});
-            return replaceSxExtraPlaceholder({content: processedContent.code, filename});
-        }
-    };
-}
 
 export function sxPreprocessor(dir = '../../sxc/') {
     // Get the current file and directory paths
@@ -160,6 +96,8 @@ export function sxPreprocessor(dir = '../../sxc/') {
 
             // Regular expression to match sxClass attribute in the content
             const regex = /sxClass=\{?"(.*?)"(?:\s*\+\s*\{([^\}]+)\})?\}?/g;
+            let varRegex = /sxClass=\{\[(.*?)\]\}/g;
+
             let matches;
             let count = 0;
             let keyframes = ""
@@ -192,9 +130,40 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     console.error("Error:", e);
                 }
             }
+            let match
+            while ((match = varRegex.exec(content)) !== null) {
+                // Transform the matched string
+                const transformed = match[0]
+                    .split(", ")
+                    .map(sxClass => sxClass
+                        .replaceAll('{', '')
+                        .replaceAll("}", "")
+                        .replaceAll(",", ":")
+                        .split(":").map(param=>{
+                            console.log("param:"+param)
+                            if(param.includes('"') || param.includes("'")){
+                                return param
+                            }else{
+                                console.log("$"+ param)
+                                return "$"+ param
+                            }
+                        }).join(":")
+                        .replaceAll("(", ":")
+                        .replaceAll(")", "")
+                        .replaceAll('"', "")
+                        .replaceAll("]", '"')
+                        .replaceAll("[", '"')
+                    )
+                    .join(" ");
 
-            // Loop through all instances of sxClass in the content
-            while ((matches = regex.exec(content)) !== null) {
+                // Replace the original matched string in modifiedContent with the transformed string
+                modifiedContent = modifiedContent.replace(match[0], transformed);
+                console.log(modifiedContent)
+            }
+
+
+                // Loop through all instances of sxClass in the content
+            while ((matches = regex.exec(modifiedContent)) !== null) {
                 let styleContent = '';
                 let inlineStyles = ''; // For generating the inline styles for variables
                 uniqueClassName = `sxClassGenerated${count}`;
@@ -255,7 +224,6 @@ export function sxPreprocessor(dir = '../../sxc/') {
                             allStyles += `${results.hoverContent}\n`;
                         }
                         keyframes += results.keyframesContent;
-                        console.log(keyframes)
                     }
 
                 });
@@ -296,7 +264,6 @@ export function sxPreprocessor(dir = '../../sxc/') {
                 }
             }
 
-            console.log(modifiedContent)
             // Return the modified content
             return {code: modifiedContent};
 
@@ -346,7 +313,6 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     } else if (key === "animation") {
                         let anim = animations[value.split(' ')[0]];
                         styles+= "animation:"+ value+";\n"
-                        console.log("animation:"+ value+";\n")
 
                         keyframesContent += anim;
                     } else if(breakpoints[key]){
@@ -366,7 +332,6 @@ export function sxPreprocessor(dir = '../../sxc/') {
                         const c = uniqueClassName === prefix? `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName}`:  `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName} ${prefix}`;
                         if (mediaStyles) {
                             allStyles += `${c} {\n${mediaStyles}\n}}`;
-                            console.log(`${c} {\n${mediaStyles}\n}}`)
                         }
                         if (hoverMediaStyles) {
                             allStyles += `${c}:hover {\n${hoverMediaStyles}\n}}`;
@@ -710,3 +675,65 @@ function processExtraStyles(styles, animations, breakpoints, uniqueClassName) {
 
 
 
+function getDefaultParams(func) {
+    // Convert the function to its string representation
+    const funcStr = func.toString();
+
+    // Extract everything between the first pair of parentheses
+    const paramsStr = funcStr.match(/\(([^)]+)\)/)[1];
+
+    // Split the parameters by comma and map over each param
+    return paramsStr.split(',').map(param => {
+        // Check if the param has a default value
+        const parts = param.trim().split('=');
+        if (parts.length > 1) {
+            return parts[1].trim();  // Return the default value
+        } else {
+            return undefined;  // Return undefined for no default
+        }
+    });
+}
+
+export function preprocessSxExtra({content, filename}) {
+    const regex = /<Pre_(.*?)\s.*?sxExtra\s?=\s?["'](.*?)["'].*?id\s?=\s?["'](.*?)["']/g;
+    let matches;
+
+    while ((matches = regex.exec(content)) !== null) {
+        const componentName = matches[1];
+        const sxExtraValue = matches[2];
+        const idValue = matches[3];
+
+        if (!componentsMap.has(componentName)) {
+            componentsMap.set(componentName, new Map());
+        }
+        let idMap = componentsMap.get(componentName);
+        idMap.set(idValue, sxExtraValue);
+    }
+    // Insert the generated object into content after building the map
+
+
+    // Replace the $$ placeholders
+    content = replaceSxPlaceholders({content, filename});
+
+    return {code: content};
+}
+
+export function replaceSxExtraPlaceholder({content, filename}) {
+    for (let [componentName, idMap] of componentsMap.entries()) {
+        for (let [id, sxExtraValue] of idMap.entries()) {
+            const placeholderRegex = new RegExp(`\\$\\$${sxExtraValue}`, 'g');
+            content = content.replace(placeholderRegex, id);
+        }
+    }
+
+    return {code: content};
+}
+
+export function sxExtraPreprocessor() {
+    return {
+        markup({content, filename}) {
+            const processedContent = preprocessSxExtra({content, filename});
+            return replaceSxExtraPlaceholder({content: processedContent.code, filename});
+        }
+    };
+}

@@ -1,4 +1,11 @@
-<div sxClass="animation">
+<script>
+    import {animation, animation2} from "../../sxc/test.js";
+    import {container} from "../preprocess/sxc_lib/__Container.js";
+
+    let color = "blue"
+</script>
+
+<div sxClass={[container("red",color)]}>
     <h1>test</h1>
     <h1>test</h1>
     <h1>test</h1>
