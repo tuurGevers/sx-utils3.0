@@ -1,6 +1,6 @@
 {
 	"name": "sx-static",
-	"version": "0.5.4",
+	"version": "0.5.6",
 	"scripts": {
 		"dev": "vite dev --host",
 		"build": "vite build && npm run package",

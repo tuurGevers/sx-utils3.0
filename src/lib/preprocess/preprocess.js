@@ -51,7 +51,7 @@ export function sxPreprocessor(dir = '../../sxc/') {
             filesToInclude.length === 0 ? filesToInclude = allFiles.map(af => af.file) : filesToInclude
             allFiles.forEach(({dir, file}) => {
                 const modulePath = pathToFileURL(path.join(dir, file));
-                import(modulePath).then(module => {
+                import(/*@vite-ignore*/ modulePath).then(module => {
                     // Add the unique class name as a prop to each component
                     for (const key in module) {
                         if (key.startsWith('kf_')) {
@@ -132,18 +132,19 @@ export function sxPreprocessor(dir = '../../sxc/') {
             }
             let match
             while ((match = varRegex.exec(content)) !== null) {
+                const functionName = match[1].replaceAll("(","").replaceAll(")","");  // Assuming the function name is captured in the first capture group.
+                console.log(functionName)
                 // Transform the matched string
                 const transformed = match[0]
                     .split(", ")
                     .map(sxClass => sxClass
                         .replaceAll('{', '')
                         .replaceAll("}", "")
-                        .split(",").map(param=>{
-                            if(param.includes('"') || param.includes("'") || !sxClass.includes(",")){
+                        .split(",").map(param => {
+                            if (param.includes('"') || param.includes("'") || !sxClass.includes(",")) {
                                 return param
-                            }else{
-                                console.log("$"+ param)
-                                return "$"+ param
+                            } else {
+                                return "$" + param
                             }
                         }).join(":")
                         .replaceAll("(", ":")
@@ -156,11 +157,13 @@ export function sxPreprocessor(dir = '../../sxc/') {
 
                 // Replace the original matched string in modifiedContent with the transformed string
                 modifiedContent = modifiedContent.replace(match[0], transformed);
+                const importRegex = new RegExp(`import {[^}]*${functionName}[^}]*} from "[^"]+";`, 'g');
+                modifiedContent = modifiedContent.replace(importRegex, "");
                 console.log(modifiedContent)
             }
 
 
-                // Loop through all instances of sxClass in the content
+            // Loop through all instances of sxClass in the content
             while ((matches = regex.exec(modifiedContent)) !== null) {
                 let styleContent = '';
                 let inlineStyles = ''; // For generating the inline styles for variables
@@ -215,7 +218,7 @@ export function sxPreprocessor(dir = '../../sxc/') {
                     function processStyles(styles) {
                         const results = generateStyles(styles, uniqueClassName);
                         if (results.styles) {
-                            allStyles += `.${uniqueClassName} {\n${results.styles}\n}`;
+                            allStyles += `.${uniqueClassName} {\n${results.styles}\n}\n\n`;
                             allStyles += `\n${results.individualStyles}\n`;
                         }
                         if (results.hoverContent) {
@@ -310,10 +313,10 @@ export function sxPreprocessor(dir = '../../sxc/') {
                         hoverContent += `.${prefix}${key.substring(1).replaceAll("_", "")}:hover {\n${hoverStyles}\n}\n`;
                     } else if (key === "animation") {
                         let anim = animations[value.split(' ')[0]];
-                        styles+= "animation:"+ value+";\n"
+                        styles += "animation:" + value + ";\n"
 
                         keyframesContent += anim;
-                    } else if(breakpoints[key]){
+                    } else if (breakpoints[key]) {
                         let mediaStyles = '';
                         let hoverMediaStyles = '';
                         for (const [mediaKey, mediaValue] of Object.entries(value)) {
@@ -327,14 +330,14 @@ export function sxPreprocessor(dir = '../../sxc/') {
                         }
 
                         // Generate the media query outside of the class selector
-                        const c = uniqueClassName === prefix? `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName}`:  `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName} ${prefix}`;
+                        const c = uniqueClassName === prefix ? `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName}` : `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName} ${prefix}`;
                         if (mediaStyles) {
-                            allStyles += `${c} {\n${mediaStyles}\n}}`;
+                            allStyles += `${c} {\n${mediaStyles}\n}}\n\n`;
                         }
                         if (hoverMediaStyles) {
-                            allStyles += `${c}:hover {\n${hoverMediaStyles}\n}}`;
+                            allStyles += `${c}:hover {\n${hoverMediaStyles}\n}}\n\n`;
                         }
-                    }else {
+                    } else {
                         styles += `${checkSpecial(key, value)}\n`;
                     }
                 }
@@ -670,7 +673,6 @@ function processExtraStyles(styles, animations, breakpoints, uniqueClassName) {
 
 
 }
-
 
 
 function getDefaultParams(func) {
