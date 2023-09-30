@@ -255,6 +255,7 @@ export function sxPreprocessor(dir = '../../sxc/') {
                             allStyles += `${results.hoverContent}\n`;
                         }
                         keyframes += results.keyframesContent;
+                        console.log(keyframes)
                     }
 
                 });
@@ -295,6 +296,7 @@ export function sxPreprocessor(dir = '../../sxc/') {
                 }
             }
 
+            console.log(modifiedContent)
             // Return the modified content
             return {code: modifiedContent};
 
@@ -343,8 +345,33 @@ export function sxPreprocessor(dir = '../../sxc/') {
                         hoverContent += `.${prefix}${key.substring(1).replaceAll("_", "")}:hover {\n${hoverStyles}\n}\n`;
                     } else if (key === "animation") {
                         let anim = animations[value.split(' ')[0]];
+                        styles+= "animation:"+ value+";\n"
+                        console.log("animation:"+ value+";\n")
+
                         keyframesContent += anim;
-                    } else {
+                    } else if(breakpoints[key]){
+                        let mediaStyles = '';
+                        let hoverMediaStyles = '';
+                        for (const [mediaKey, mediaValue] of Object.entries(value)) {
+                            if (mediaKey === "H_" || mediaKey === "h_") {
+                                for (const [hoverKey, hoverValue] of Object.entries(mediaValue)) {
+                                    hoverMediaStyles += `${checkSpecial(hoverKey, hoverValue)}\n`;
+                                }
+                            } else {
+                                mediaStyles += `${checkSpecial(mediaKey, mediaValue)}\n`;
+                            }
+                        }
+
+                        // Generate the media query outside of the class selector
+                        const c = uniqueClassName === prefix? `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName}`:  `@media ${breakpoints[key]} {\n.${uniqueClassName}.${uniqueClassName} ${prefix}`;
+                        if (mediaStyles) {
+                            allStyles += `${c} {\n${mediaStyles}\n}}`;
+                            console.log(`${c} {\n${mediaStyles}\n}}`)
+                        }
+                        if (hoverMediaStyles) {
+                            allStyles += `${c}:hover {\n${hoverMediaStyles}\n}}`;
+                        }
+                    }else {
                         styles += `${checkSpecial(key, value)}\n`;
                     }
                 }
